@@ -1,15 +1,18 @@
 #!/usr/bin/env escript
 
-main([]) ->
-    io:format("usage: escript solution.escript filename~n");
 
+-spec main([string()]) -> ok.
 main([Filename]) ->
     {ok, Data} = file:read_file(Filename),
     Lines = binary:split(Data, <<"\n">>, [global, trim_all]),
     Result = convert_lines(Lines, 0),
-    io:format("~w~n", [Result]).
+    io:format("~w~n", [Result]);
+
+main(_) ->
+    io:format("usage: escript solution.escript filename~n").
 
 
+-spec convert_lines([binary()], non_neg_integer()) -> non_neg_integer().
 convert_lines([], Result) ->
     Result;
 
@@ -20,6 +23,7 @@ convert_lines([Line | Lines], Result) ->
     convert_lines(Lines, Result + 10 * First + Last).
 
 
+-spec convert_line(string(), [non_neg_integer()]) -> [non_neg_integer()].
 convert_line([], Result) ->
     lists:reverse(Result);
 

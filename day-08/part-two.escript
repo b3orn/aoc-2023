@@ -30,7 +30,10 @@ parse_nodes([Line | Lines], Result) ->
 
 traverse_map(Instructions, Nodes) ->
     StartNodes = maps:filter(fun(<<_, _, "A">>, _) -> true; (_, _) -> false end, Nodes),
-    [traverse_map(Instructions, Loc, Instructions, Nodes, [Node]) || {Node, Loc} <- maps:to_list(StartNodes)].
+    parallel(fun({Node, Loc}) ->
+            traverse_map(Instructions, Loc, Instructions, Nodes, [Node])
+        end,
+        maps:to_list(StartNodes)).
 
 
 traverse_map([], Location, Instructions, Nodes, Path) ->
@@ -84,3 +87,28 @@ primes() ->
     [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71,
      73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173,
      179, 181, 191, 193, 197, 199, 211, 223, 227, 229, 233, 239, 241, 251, 257, 263, 269, 271, 277, 281].
+
+
+-spec parallel(function(), [any()]) -> [any()].
+parallel(Fun, Values) ->
+    gather(divide(Fun, Values)).
+
+
+-spec divide(function(), [any()]) -> [pid()].
+divide(Fun, Values) ->
+    Self = self(),
+    [spawn(fun() -> Self ! {self(), Fun(Value)} end) || Value <- Values].
+
+
+-spec gather([pid()]) -> [any()].
+gather(Pids) ->
+    gather(Pids, Pids, #{}).
+
+gather([], Pids, Results) ->
+    [maps:get(Pid, Results) || Pid <- Pids];
+
+gather(Pids, AllPids, Results) ->
+    receive
+        {Pid, Value} ->
+            gather(lists:delete(Pid, Pids), AllPids, Results#{Pid => Value})
+    end.

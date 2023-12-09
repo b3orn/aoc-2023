@@ -13,8 +13,7 @@ run(one, Lines) ->
 
 run(two, Lines) ->
     InitialCards = parse_cards(Lines),
-    FinalCards = play_cards(InitialCards),
-    length(FinalCards).
+    play_cards(InitialCards).
 
 
 -spec parse_cards(binary()) -> [non_neg_integer()].
@@ -60,13 +59,13 @@ parse_numbers(Numbers) ->
 -spec play_cards(Cards) -> Cards
     when Cards :: [{pos_integer(), non_neg_integer()}].
 play_cards(Cards) ->
-    lists:flatten(play_cards(Cards, Cards)).
+    play_cards(Cards, Cards, 0).
 
 
--spec play_cards(Cards, Cards) -> Cards
+-spec play_cards(Cards, Cards, Cards) -> Cards
     when Cards :: [{pos_integer(), non_neg_integer()}].
-play_cards([], _) ->
-    [];
-play_cards([{Card, {_, N}} | Cards], AllCards) ->
+play_cards([], _, Result) ->
+    Result;
+play_cards([{Card, {_, N}} | Cards], AllCards, Result) ->
     NewCards = lists:sublist(AllCards, Card + 1, N),
-    [Card, play_cards(NewCards, AllCards), play_cards(Cards, AllCards)].
+    play_cards(lists:append(NewCards, Cards), AllCards, Result + 1).

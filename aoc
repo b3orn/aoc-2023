@@ -1,0 +1,7 @@
+#!/usr/bin/env escript
+%%! -pa ebin
+
+
+-spec main([string()]) -> ok.
+main(Args) ->
+    aoc:main(Args).

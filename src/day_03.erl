@@ -1,10 +1,19 @@
-#!/usr/bin/env escript
+-module(day_03).
+
+-export([parts/0, run/2]).
 
 
--spec main([string()]) -> ok.
-main([Filename]) ->
-    {ok, Data} = file:read_file(Filename),
-    Lines = binary:split(Data, <<"\n">>, [global, trim_all]),
+-spec parts() -> [atom()].
+parts() -> [one, two].
+
+
+-spec run(one | two, [binary()]) -> integer().
+run(one, Lines) ->
+    Positions = find_symbols(Lines),
+    PartNumbers = find_part_numbers(Lines, Positions),
+    lists:sum([N || {N, _} <- PartNumbers]);
+
+run(two, Lines) ->
     Positions = find_gears(Lines),
     PartNumbers = find_part_numbers(Lines, Positions),
     GearRatios = lists:filtermap(fun(Pos) ->
@@ -14,10 +23,25 @@ main([Filename]) ->
             end
         end,
         Positions),
-    io:format("~p~n", [lists:sum(GearRatios)]);
+    lists:sum(GearRatios).
 
-main(_) ->
-    io:format("usage: escript part-two.escript filename~n").
+
+-spec find_symbols([string()]) -> [{non_neg_integer(), non_neg_integer()}].
+find_symbols(Lines) ->
+    find_symbols(Lines, 0, []).
+
+
+-spec find_symbols([binary()], non_neg_integer(), Positions) -> Positions
+    when Positions :: [{non_neg_integer(), non_neg_integer()}].
+find_symbols([], _, Positions) ->
+    Positions;
+
+find_symbols([Line | Lines], Y, Positions) ->
+    NewPositions = case re:run(Line, "([^\\d\\.])", [global, {capture, all_but_first}]) of
+        nomatch -> [];
+        {match, Matches} -> lists:map(fun([{X, _}]) -> {X, Y} end, Matches)
+    end,
+    find_symbols(Lines, Y + 1, lists:append(Positions, NewPositions)).
 
 
 -spec find_gears([string()]) -> [{non_neg_integer(), non_neg_integer()}].
@@ -44,8 +68,8 @@ find_part_numbers(Lines, PartPositions) ->
     find_part_numbers(Lines, PartPositions, 0, []).
 
 
--spec find_part_numbers([binary()], [{non_neg_integer(), non_neg_integer()}], non_neg_integer(), [non_neg_integer()]) ->
-    [non_neg_integer()].
+-spec find_part_numbers([binary()], [{non_neg_integer(), non_neg_integer()}], non_neg_integer(), Result) -> Result
+    when Result :: [{non_neg_integer(), {non_neg_integer(), non_neg_integer()}}].
 find_part_numbers([], _, _, PartNumbers) ->
     PartNumbers;
  
@@ -55,7 +79,7 @@ find_part_numbers([Line | Lines], Positions, Y, PartNumbers) ->
         {match, Matches} ->
             lists:filtermap(fun([{X, Length}]) ->
                 case is_adjacent(X, Y, Length, Positions) of
-                    {GearX, GearY} -> {true, {binary_to_integer(binary:part(Line, X, Length)), {GearX, GearY}}};
+                    {SymX, SymY} -> {true, {binary_to_integer(binary:part(Line, X, Length)), {SymX, SymY}}};
                     false -> false
                 end
             end,

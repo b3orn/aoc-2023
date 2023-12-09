@@ -1,17 +1,24 @@
-#!/usr/bin/env escript
+-module(day_05).
+
+-export([parts/0, run/2]).
 
 
--spec main([string()]) -> ok.
-main([Filename]) ->
-    {ok, Data} = file:read_file(Filename),
-    Lines = binary:split(Data, <<"\n">>, [global, trim_all]),
+-spec parts() -> [atom()].
+parts() -> [one, two].
+
+
+-spec run(one | two, [binary()]) -> integer().
+run(one, Lines) ->
     Parsed = parse_file(Lines),
     Mapped = map_seeds(maps:get(seeds, Parsed), Parsed),
-    MinLocation = lists:min([L || {_, L} <- Mapped]),
-    io:format("~p~n", [MinLocation]);
+    lists:min([L || {_, L} <- Mapped]);
 
-main(_) ->
-    io:format("usage: escript solution.escript filename~n").
+run(two, Lines) ->
+    Parsed = parse_file(Lines),
+    Seeds = parse_seeds(maps:get(seeds, Parsed), []),
+    Mappings = [maps:get(Key, Parsed) || Key <- [soil, fertilizer, water, light, temperature, humidity, location]],
+    Mapped = map_seed_ranges(Seeds, Mappings),
+    lists:min([L || {L, _} <- Mapped]).
 
 
 parse_file(Lines) ->
@@ -39,6 +46,13 @@ parse_file([Line | Lines], State, Result) ->
             Mapping = lists:append(maps:get(State, Result), parse_mapping(Line)),
             parse_file(Lines, State, maps:update(State, Mapping, Result))
     end.
+
+
+parse_seeds([], Result) ->
+    lists:reverse(Result);
+
+parse_seeds([Start, Length | Seeds], Result) ->
+    parse_seeds(Seeds, [{Start, Length} | Result]).
 
 
 parse_mapping(Line) ->
@@ -90,3 +104,39 @@ map_value(Value, [{Dest, Start, Length} | _]) when Value >= Start, Value < Start
 
 map_value(Value, [_ | Mappings]) ->
     map_value(Value, Mappings).
+
+
+map_seed_ranges(Ranges, []) ->
+    Ranges;
+
+map_seed_ranges(Ranges, [Mapping | Mappings]) ->
+    NewRanges = lists:flatten([map_range(Range, Mapping, Mapping) || Range <- Ranges]),
+    map_seed_ranges(NewRanges, Mappings).
+
+
+map_range(Range, [], _) ->
+    [Range];
+
+% range start is within map
+map_range({Start, Length}, [{Dest, SrcStart, SrcLength} | _], Mappings) when Start >= SrcStart, Start < SrcStart + SrcLength ->
+    MappableLength = SrcStart + SrcLength - Start,
+    case Length - MappableLength of
+        N when N =< 0 -> % range fits completely into map
+            [{Dest + Start - SrcStart, Length}];
+        N -> % start of the range is within map, tail is not, split the range
+            [{Dest + Start - SrcStart, MappableLength} | map_range({SrcStart + SrcLength, N}, Mappings, Mappings)]
+    end;
+
+% range start is outside of map, but range and map overlap
+map_range({Start, Length}, [{Dest, SrcStart, SrcLength} | _], Mappings) when SrcStart > Start, SrcStart < Start + Length ->
+    PrefixLength = SrcStart - Start,
+    Prefix = map_range({Start, PrefixLength}, Mappings, Mappings),
+    case Length - PrefixLength of
+        N when N =< SrcLength -> % end of range is within map
+            [{Dest, N} | Prefix];
+        N -> % end of map is beyond end of map
+            [{Dest, SrcLength}, Prefix | map_range({SrcStart + SrcLength, N - SrcLength}, Mappings, Mappings)]
+    end;
+
+map_range(Range, [_ | Mappings], AllMappings) ->
+    map_range(Range, Mappings, AllMappings).

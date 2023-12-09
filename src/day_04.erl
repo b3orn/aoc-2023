@@ -1,18 +1,20 @@
-#!/usr/bin/env escript
+-module(day_04).
+
+-export([parts/0, run/2]).
 
 
--spec main([string()]) -> ok.
-main([Filename]) ->
-    {ok, Data} = file:read_file(Filename),
-    Lines = binary:split(Data, <<"\n">>, [global, trim_all]),
+-spec parts() -> [atom()].
+parts() -> [one, two].
+
+
+-spec run(one | two, [binary()]) -> integer().
+run(one, Lines) ->
+    lists:sum([Points || {_, {Points, _}} <- parse_cards(Lines)]);
+
+run(two, Lines) ->
     InitialCards = parse_cards(Lines),
-    TotalPoints = lists:sum([Points || {_, {Points, _}} <- InitialCards]),
-    io:format("task 1: ~w~n", [TotalPoints]),
     FinalCards = play_cards(InitialCards),
-    io:format("task 2: ~w~n", [length(FinalCards)]);
-
-main(_) ->
-    io:format("usage: escript part-two.escript filename~n").
+    length(FinalCards).
 
 
 -spec parse_cards(binary()) -> [non_neg_integer()].

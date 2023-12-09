@@ -18,14 +18,13 @@ main(["all"]) ->
     end;
 
 main([Day]) ->
-    Root = filename:dirname(filename:dirname(code:which(?MODULE))),
     DayDir = lists:flatten(["day-", string:pad(Day, 2, leading, "0")]),
-    Path = filename:join([Root, "data", DayDir, "input.txt"]),
+    Path = filename:join([root_dir(), "data", DayDir, "input.txt"]),
     main([Day, Path]);
 
 main([Day, Filename]) ->
-    DayNo = string:pad(Day, 2, leading, "0"),
-    ModuleName = lists:flatten(["day_", DayNo]),
+    DayNo = list_to_integer(Day),
+    ModuleName = lists:flatten(["day_", string:pad(Day, 2, leading, "0")]),
     maybe
         {ok, Data} ?= file:read_file(Filename),
         Lines = binary:split(Data, <<"\n">>, [global, trim_all]),
@@ -35,7 +34,14 @@ main([Day, Filename]) ->
                 Result = catch Module:run(Part, Lines),
                 Stop = erlang:monotonic_time(nanosecond),
                 Duration = (Stop - Start) / 1000000,
-                io:format("~s ~p ~.3fms: ~p~n", [DayNo, Part, Duration, Result])
+                case load_result(DayNo, Part) of
+                    undefined ->
+                        io:format("~2..0w ~w ~.3fms: ~w~n", [DayNo, Part, Duration, Result]);
+                    Result ->
+                        io:format("~2..0w ~w ~.3fms: ~w ✓~n", [DayNo, Part, Duration, Result]);
+                    Expected ->
+                        io:format("~2..0w ~w ~.3fms: ~w, expected ~w~n", [DayNo, Part, Duration, Result, Expected])
+                end
             end,
             Module:parts())
     else
@@ -58,3 +64,20 @@ find_days() ->
             end,
             Filenames))}
     end.
+
+
+load_result(Day, Part) ->
+    Filename = filename:join([root_dir(), "data", "results.txt"]),
+    maybe
+        {ok, [Results]} ?= file:consult(Filename),
+        {Day, Parts} ?= lists:keyfind(Day, 1, Results),
+        {Part, Result} ?= lists:keyfind(Part, 1, Parts),
+        Result
+    else
+        _ ->
+            undefined
+    end.
+
+
+root_dir() ->
+    filename:dirname(filename:dirname(code:which(?MODULE))).

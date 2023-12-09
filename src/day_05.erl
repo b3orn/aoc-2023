@@ -22,14 +22,7 @@ run(two, Lines) ->
 
 
 parse_file(Lines) ->
-    parse_file(Lines, undefined, #{seeds => [],
-                                   soil => [],
-                                   fertilizer => [],
-                                   water => [],
-                                   light => [],
-                                   temperature => [],
-                                   humidity => [],
-                                   location => []}).
+    parse_file(Lines, undefined, #{}).
 
 
 parse_file([], _, Result) ->
@@ -43,8 +36,8 @@ parse_file([Line | Lines], State, Result) ->
         {match, [Key]} ->
             parse_file(Lines, mapping_keys(Key), Result);
         nomatch ->
-            Mapping = lists:append(maps:get(State, Result), parse_mapping(Line)),
-            parse_file(Lines, State, maps:update(State, Mapping, Result))
+            Mapping = maps:get(State, Result, []) ++ parse_mapping(Line),
+            parse_file(Lines, State, Result#{State => Mapping})
     end.
 
 

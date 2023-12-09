@@ -41,7 +41,7 @@ find_symbols([Line | Lines], Y, Positions) ->
         nomatch -> [];
         {match, Matches} -> lists:map(fun([{X, _}]) -> {X, Y} end, Matches)
     end,
-    find_symbols(Lines, Y + 1, lists:append(Positions, NewPositions)).
+    find_symbols(Lines, Y + 1, Positions ++ NewPositions).
 
 
 -spec find_gears([string()]) -> [{non_neg_integer(), non_neg_integer()}].
@@ -59,7 +59,7 @@ find_gears([Line | Lines], Y, Positions) ->
         nomatch -> [];
         {match, Matches} -> lists:map(fun([{X, _}]) -> {X, Y} end, Matches)
     end,
-    find_gears(Lines, Y + 1, lists:append(Positions, NewPositions)).
+    find_gears(Lines, Y + 1, Positions ++ NewPositions).
 
 
 -spec find_part_numbers([binary()], [{non_neg_integer(), non_neg_integer()}]) ->
@@ -85,7 +85,7 @@ find_part_numbers([Line | Lines], Positions, Y, PartNumbers) ->
             end,
             Matches)
     end,
-    find_part_numbers(Lines, Positions, Y + 1, lists:append(PartNumbers, NewPartNumbers)).
+    find_part_numbers(Lines, Positions, Y + 1, PartNumbers ++ NewPartNumbers).
 
 
 -spec is_adjacent(non_neg_integer(), non_neg_integer(), pos_integer(), [{non_neg_integer(), non_neg_integer()}]) ->

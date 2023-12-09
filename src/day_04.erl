@@ -68,4 +68,4 @@ play_cards([], _, Result) ->
     Result;
 play_cards([{Card, {_, N}} | Cards], AllCards, Result) ->
     NewCards = [element(I, AllCards) || I <- lists:seq(Card + 1, Card + N)],
-    play_cards(lists:append(NewCards, Cards), AllCards, Result + 1).
+    play_cards(NewCards ++ Cards, AllCards, Result + 1).

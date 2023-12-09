@@ -1,19 +1,25 @@
-#!/usr/bin/env escript
+-module(day_02).
+
+-export([parts/0, run/2]).
+
 
 -define(N_RED, 12).
 -define(N_GREEN, 13).
 -define(N_BLUE, 14).
 
 
--spec main([string()]) -> ok.
-main([Filename]) ->
-    {ok, Data} = file:read_file(Filename),
-    Lines = binary:split(Data, <<"\n">>, [global, trim_all]),
-    {GameIdSum, PowerSum} = process_lines(Lines, 0, 0),
-    io:format("game id sum: ~w~npower sum: ~w~n", [GameIdSum, PowerSum]);
+-spec parts() -> [atom()].
+parts() -> [one, two].
 
-main(_) ->
-    io:format("usage: escript solution.escript filename~n").
+
+-spec run(one | two, [binary()]) -> integer().
+run(one, Lines) ->
+    {Result, _} = process_lines(Lines, 0, 0),
+    Result;
+
+run(two, Lines) ->
+    {_, Result} = process_lines(Lines, 0, 0),
+    Result.
 
 
 -spec process_lines([binary()], non_neg_integer(), non_neg_integer()) ->

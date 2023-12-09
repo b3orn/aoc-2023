@@ -5,6 +5,12 @@
 
 
 -spec main([string()]) -> ok.
+main([Day]) ->
+    Root = filename:dirname(filename:dirname(code:which(?MODULE))),
+    DayDir = lists:flatten(["day-", string:pad(Day, 2, leading, "0")]),
+    Path = filename:join([Root, "data", DayDir, "input.txt"]),
+    main([Day, Path]);
+
 main([Day, Filename]) ->
     ModuleName = lists:flatten(["day_", string:pad(Day, 2, leading, "0")]),
     maybe
@@ -13,7 +19,7 @@ main([Day, Filename]) ->
         {module, Module} ?= code:load_file(list_to_atom(ModuleName)),
         lists:foreach(fun(Part) ->
                 Start = erlang:monotonic_time(nanosecond),
-                Result = Module:run(Part, Lines),
+                Result = catch Module:run(Part, Lines),
                 Stop = erlang:monotonic_time(nanosecond),
                 Duration = (Stop - Start) / 1000000,
                 io:format("~p ~.3fms: ~p~n", [Part, Duration, Result])
@@ -25,4 +31,4 @@ main([Day, Filename]) ->
     end;
 
 main(_) ->
-    io:format("usage: aoc day filename~n").
+    io:format("usage: aoc day [filename]~n").

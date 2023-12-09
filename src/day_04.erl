@@ -59,7 +59,7 @@ parse_numbers(Numbers) ->
 -spec play_cards(Cards) -> Cards
     when Cards :: [{pos_integer(), non_neg_integer()}].
 play_cards(Cards) ->
-    play_cards(Cards, Cards, 0).
+    play_cards(Cards, list_to_tuple(Cards), 0).
 
 
 -spec play_cards(Cards, Cards, Cards) -> Cards
@@ -67,5 +67,5 @@ play_cards(Cards) ->
 play_cards([], _, Result) ->
     Result;
 play_cards([{Card, {_, N}} | Cards], AllCards, Result) ->
-    NewCards = lists:sublist(AllCards, Card + 1, N),
+    NewCards = [element(I, AllCards) || I <- lists:seq(Card + 1, Card + N)],
     play_cards(lists:append(NewCards, Cards), AllCards, Result + 1).

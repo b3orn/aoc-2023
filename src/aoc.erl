@@ -31,7 +31,7 @@ main([Day, Filename]) ->
         {module, Module} ?= code:load_file(list_to_atom(ModuleName)),
         lists:foreach(fun(Part) ->
                 Start = erlang:monotonic_time(nanosecond),
-                Result = catch Module:run(Part, Lines),
+                Result = Module:run(Part, Lines),
                 Stop = erlang:monotonic_time(nanosecond),
                 Duration = (Stop - Start) / 1000000,
                 case load_result(DayNo, Part) of

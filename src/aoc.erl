@@ -27,7 +27,7 @@ main([Day, Filename]) ->
     ModuleName = lists:flatten(["day_", string:pad(Day, 2, leading, "0")]),
     maybe
         {ok, Data} ?= file:read_file(Filename),
-        Lines = binary:split(Data, <<"\n">>, [global, trim_all]),
+        Lines = binary:split(Data, <<"\n">>, [global]),
         {module, Module} ?= code:load_file(list_to_atom(ModuleName)),
         lists:foreach(fun(Part) ->
                 Start = erlang:monotonic_time(nanosecond),

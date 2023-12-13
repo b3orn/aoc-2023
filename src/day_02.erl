@@ -27,6 +27,9 @@ run(two, Lines) ->
 process_lines([], GameIdSum, PowerSum) ->
     {GameIdSum, PowerSum};
 
+process_lines([<<>> | Lines], GameIdSum, PowerSum) ->
+    process_lines(Lines, GameIdSum, PowerSum);
+
 process_lines([Line | Lines], GameIdSum, PowerSum) ->
     {NewGameIdSum, NewPowerSum} = process_line(Line, GameIdSum, PowerSum),
     process_lines(Lines, NewGameIdSum, NewPowerSum).

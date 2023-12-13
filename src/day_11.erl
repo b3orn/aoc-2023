@@ -16,7 +16,7 @@ run(two, Lines) ->
 
 
 find_shortest_path_sum(Lines, Scale) ->
-    Map = [binary_to_list(Line) || Line <- Lines],
+    Map = [binary_to_list(Line) || Line <- Lines, Line /= <<>>],
     {EmptyRows, EmptyColumns} = find_empty_space(Map),
     Galaxies = find_galaxies(Map, EmptyRows, EmptyColumns, Scale),
     Paths = find_paths(Galaxies),

@@ -28,10 +28,14 @@ parse_file(Lines) ->
 parse_file([], _, Result) ->
     Result;
 
+parse_file([<<>> | Lines], State, Result) ->
+    parse_file(Lines, State, Result);
+
 parse_file([<<"seeds:", Line/binary>> | Lines], undefined, Result) ->
     parse_file(Lines, undefined, Result#{seeds => parse_numbers(Line)});
 
 parse_file([Line | Lines], State, Result) ->
+    
     case re:run(Line, "(.*?) map:", [{capture, all_but_first, binary}]) of
         {match, [Key]} ->
             parse_file(Lines, mapping_keys(Key), Result);

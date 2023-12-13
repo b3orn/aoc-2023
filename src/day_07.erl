@@ -29,6 +29,9 @@ parse_hands(Lines) ->
 parse_hands([], Result) ->
     lists:reverse(Result);
 
+parse_hands([<<>> | Lines], Result) ->
+    parse_hands(Lines, Result);
+
 parse_hands([Line | Lines], Result) ->
     [Cards, Bid] = binary:split(Line, <<" ">>, [global, trim_all]),
     ParsedCards = parse_cards(Cards),

@@ -9,11 +9,11 @@ parts() -> [one, two].
 
 -spec run(one | two, [binary()]) -> integer().
 run(one, Lines) ->
-    Data = [parse_numbers(Line) || Line <- Lines],
+    Data = [parse_numbers(Line) || Line <- Lines, Line /= <<>>],
     lists:sum([extrapolate_forward(Line) || Line <- Data]);
 
 run(two, Lines) ->
-    Data = [parse_numbers(Line) || Line <- Lines],
+    Data = [parse_numbers(Line) || Line <- Lines, Line /= <<>>],
     lists:sum([extrapolate_backward(Line) || Line <- Data]).
 
 

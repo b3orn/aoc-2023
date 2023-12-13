@@ -24,6 +24,8 @@ parse_lines(Lines) ->
 
 parse_lines([], Result) ->
     lists:reverse(Result);
+parse_lines([<<>> | Lines], Result) ->
+    parse_lines(Lines, Result);
 parse_lines([Line | Lines], Result) ->
     [Springs, Numbers] = binary:split(Line, <<" ">>, [global, trim_all]),
     Damaged = [binary_to_integer(N) || N <- binary:split(Numbers, <<",">>, [global, trim_all])],

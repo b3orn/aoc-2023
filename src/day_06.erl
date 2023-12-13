@@ -9,14 +9,14 @@ parts() -> [one, two].
 
 -spec run(one | two, [binary()]) -> integer().
 run(one, Lines) ->
-    Trimmed = [lists:last(binary:split(Line, <<":">>)) || Line <- Lines],
+    Trimmed = [lists:last(binary:split(Line, <<":">>)) || Line <- Lines, Line /= <<>>],
     [Times, Distances] = [parse_numbers(Line) || Line <- Trimmed],
     Races = lists:zip(Times, Distances),
     Options = find_options(Races),
     lists:foldl(fun(X, Acc) -> X * Acc end, 1, Options);
 
 run(two, Lines) ->
-    Trimmed = [lists:last(binary:split(Line, <<":">>)) || Line <- Lines],
+    Trimmed = [lists:last(binary:split(Line, <<":">>)) || Line <- Lines, Line /= <<>>],
     [Times, Distances] = [parse_numbers(binary:replace(Line, <<" ">>, <<"">>, [global])) || Line <- Trimmed],
     Races = lists:zip(Times, Distances),
     Options = find_options(Races),

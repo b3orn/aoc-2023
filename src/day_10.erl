@@ -1,6 +1,7 @@
 -module(day_10).
 
 -export([parts/0, run/2]).
+-export([map_from_loop/3, find_enclosed/1]).
 
 
 -spec parts() -> [atom()].

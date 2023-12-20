@@ -6,7 +6,8 @@
          frequencies/1,
          parallel/2,
          divide/2,
-         gather/1]).
+         gather/1,
+         print_grid/1]).
 
 
 -spec primes(pos_integer()) -> [pos_integer()].
@@ -101,3 +102,10 @@ gather(Pids, AllPids, Results) ->
         {Pid, Value} ->
             gather(lists:delete(Pid, Pids), AllPids, Results#{Pid => Value})
     end.
+
+
+print_grid(Grid) ->
+    lists:foreach(fun(Line) ->
+            io:format("~s~n", [tuple_to_list(Line)])
+        end,
+        tuple_to_list(Grid)).

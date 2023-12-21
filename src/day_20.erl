@@ -4,7 +4,7 @@
 
 
 -spec parts() -> [atom()].
-parts() -> [one].
+parts() -> [one, two].
 
 
 -spec run(one | two, [binary()]) -> integer().
@@ -15,13 +15,16 @@ run(one, Lines) ->
     {_, High, Low} = process_loop(1000, State, Modules),
     High * Low;
 run(two, Lines) ->
+    % lcm of nodes leading into &lb -> rx
     Modules = parse(Lines),
     State = init_state(Modules),
     Keys = maps:keys(maps:get(<<"lb">>, State)),
-    put(rx, maps:from_list([{K, 0} || K <- Keys])),
-    put(n, 10000),
-    process_loop(10000, State, Modules),
-    maps:values(get(rx)).
+    put(rx, maps:from_list([{K, []} || K <- Keys])),
+    N = 20000,
+    put(n, N),
+    process_loop(N, State, Modules),
+    Loops = [V1 - V2 || [V1, V2 | _] <- maps:values(get(rx))],
+    utils:least_common_multiple(Loops).
 
 
 parse(Lines) ->
@@ -82,18 +85,12 @@ process_loop(0, State, _, High, Low) ->
     {State, High, Low};
 process_loop(N, State, Modules, High, Low) ->
     {NewState, NewHigh, NewLow} = process(State, Modules),
-    put(rx, maps:map(fun(Key, Value) ->
-            AllHigh = lists:all(fun
-                    (high) -> true;
-                    (low) -> false
-                end,
-                maps:values(maps:get(Key, NewState))),
-            case AllHigh of
-                true when Value == 0 ->
-                    get(n) - N;
-                _ ->
-                    Value
-            end
+    put(rx, maps:map(fun(_, Value) ->
+        lists:map(fun
+                (high) -> get(n) - N;
+                (Val) -> Val
+            end,
+            Value)
         end,
         get(rx))),
     process_loop(N - 1, NewState, Modules, High + NewHigh, Low + NewLow).
@@ -132,6 +129,16 @@ step([{Sender, Name, Signal} | Input], Output, State, Modules) ->
             step_flipflop(Signal, Name, State, Destinations);
         {conjunction, Destinations} ->
             step_conjunction(Sender, Signal, Name, State, Destinations)
+    end,
+    case maps:get(Name, get(rx), none) of
+        none -> ok;
+        Last ->
+            case lists:keyfind(<<"lb">>, 2, NewOutput) of
+                {_, _, high} ->
+                    put(rx, maps:update(Name, [high | Last], get(rx)));
+                _ ->
+                    ok
+            end
     end,
     step(Input, Output ++ NewOutput, NewState, Modules).
 

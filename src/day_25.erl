@@ -16,11 +16,9 @@ run(one, Lines) ->
     Edges = graph_edges(Graph),
     NewEdges = simulate(10 * map_size(Edges), Graph, Edges, Nodes),
     [{E1, _}, {E2, _}, {E3, _} | _] = lists:reverse(lists:keysort(2, maps:to_list(NewEdges))),
-    io:format("~p ~p ~p~n", [E1, E2, E3]),
     SplitGraph = split_graph([E1, E2, E3], Graph),
     PartialGraphs = partial_graphs(tuple_to_list(Nodes), SplitGraph),
     Sizes = [map_size(G) || G <- PartialGraphs],
-    io:format("~p~n", [Sizes]),
     lists:foldl(fun(A, B) -> A * B end, 1, Sizes).
 
 
@@ -104,14 +102,11 @@ simulate(N, Graph, Edges, Nodes, Visited, Error) ->
 
 
 shortest_path(Start, End, Graph) ->
-    shortest_path(#{0 => [Start]}, #{Start => #{}}, End, Graph).
+    shortest_path([Start], #{Start => #{}}, End, Graph).
 
 
 shortest_path(Queue, State, End, Graph) ->
-    Cost = lists:min(maps:keys(Queue)),
-    #{Cost := Options} = Queue,
-    Queue2 = maps:without([Cost], Queue),
-    case check_options(Options, Queue2, State, Cost, End, Graph) of
+    case check_options(Queue, #{}, State, End, Graph) of
         {NewQueue, NewState, undefined} ->
             shortest_path(NewQueue, NewState, End, Graph);
         {_, _, Path} ->
@@ -119,23 +114,22 @@ shortest_path(Queue, State, End, Graph) ->
     end.
 
 
-check_options([], Queue, State, _, _, _) ->
-    {Queue, State, undefined};
-check_options([End | _], _, State, _, End, _) ->
+check_options([], Queue, State, _, _) ->
+    {maps:keys(Queue), State, undefined};
+check_options([End | _], _, State, End, _) ->
     {undefined, undefined, maps:get(End, State)};
-check_options([Node | Nodes], Queue, State, Cost, End, Graph) ->
+check_options([Node | Nodes], Queue, State, End, Graph) ->
     #{Node := Connections} = Graph,
     #{Node := Path} = State,
-    {Next, NewState} = lists:foldl(fun(Con, {Q, S}) ->
+    {NewQueue, NewState} = lists:foldl(fun(Con, {Q, S}) ->
             case maps:get(Con, S, undefined) of
-                undefined -> {[Con | Q], S#{Con => Path#{{Node, Con} => true}}};
+                undefined -> {Q#{Con => true}, S#{Con => Path#{{Node, Con} => true}}};
                 _ -> {Q, S}
             end
         end,
-        {[], State},
+        {Queue, State},
         Connections),
-    NewQueue = Queue#{Cost + 1 => Next ++ maps:get(Cost + 1, Queue, [])},
-    check_options(Nodes, NewQueue, NewState, Cost, End, Graph).
+    check_options(Nodes, NewQueue, NewState, End, Graph).
 
 
 split_graph([], Graph) ->

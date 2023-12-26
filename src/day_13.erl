@@ -4,96 +4,85 @@
 
 
 -spec parts() -> [atom()].
-parts() -> [one].
+parts() -> [one, two].
 
 
 -spec run(one | two, [binary()]) -> integer().
 run(one, Lines) ->
-    Patterns = split_patterns(Lines),
-    find_reflections(Patterns).
+    Patterns = parse(Lines),
+    find_all_reflections(Patterns, 0);
+
+run(two, Lines) ->
+    Patterns = parse(Lines),
+    find_all_reflections(Patterns, 1).
 
 
-split_patterns(Lines) ->
-    split_patterns(Lines, [], []).
+parse(Lines) ->
+    parse(Lines, [], []).
 
 
-split_patterns([], [], Result) ->
-    lists:reverse([list_to_tuple(Pattern) || Pattern <- Result]);
-split_patterns([], Pattern, Result) ->
-    lists:reverse([lists:reverse(Pattern) | Result]);
-split_patterns([<<>> | Lines], Pattern, Result) ->
-    split_patterns(Lines, [], [lists:reverse(Pattern) | Result]);
-split_patterns([Line | Lines], Pattern, Result) ->
-    NewLine = list_to_tuple(binary_to_list(Line)),
-    split_patterns(Lines, [NewLine | Pattern], Result).
+parse([], [], Result) ->
+    [compress_pattern(Pattern) || Pattern <- lists:reverse(Result)];
+parse([], Pattern, Result) ->
+    parse([], [], [list_to_tuple(lists:reverse(Pattern)) | Result]);
+parse([<<>> | Lines], Pattern, Result) ->
+    parse(Lines, [], [list_to_tuple(lists:reverse(Pattern)) | Result]);
+parse([Line | Lines], Pattern, Result) ->
+    Row = list_to_tuple([if C == $# -> 1; true -> 0 end || <<C>> <= Line]),
+    parse(Lines, [Row | Pattern], Result).
 
 
-find_reflections(Patterns) ->
-    lists:sum([find_reflection(Pattern) || Pattern <- Patterns]).
-
-
-find_reflection(Pattern) ->
+compress_pattern(Pattern) ->
     Height = size(Pattern),
     Width = size(element(1, Pattern)),
-    HorizontalReflection = find_horizontal_reflection(Pattern, Height),
-    VerticalReflection = find_vertical_reflection(Pattern, Width, Height),
-    VerticalReflection + 100 * HorizontalReflection.
+    Rows = [create_bitpattern(tuple_to_list(element(Y, Pattern))) || Y <- lists:seq(1, Height)],
+    Cols = [create_bitpattern([element(X, element(Y, Pattern)) || Y <- lists:seq(1, Height)]) || X <- lists:seq(1, Width)],
+    {Width, Height, list_to_tuple(Rows), list_to_tuple(Cols)}.
 
 
-find_vertical_reflection(Pattern, Width, Height) ->
-    Rotated = list_to_tuple([
-        list_to_tuple([element(X, element(Y, Pattern)) || Y <- lists:seq(1, Height)])
-        || X <- lists:seq(1, Width)]),
-    find_horizontal_reflection(Rotated, Width).
+create_bitpattern(Items) ->
+    lists:foldl(fun(N, R) -> (R bsl 1) + N end, 0, Items).
 
 
-find_horizontal_reflection(Pattern, Height) ->
-    Patterns = generate_patterns(Height),
-    verify_patterns(Patterns, Pattern).
+
+find_all_reflections(Patterns, NBitErrors) ->
+    lists:sum([find_reflections(Pattern, NBitErrors) || Pattern <- Patterns]).
 
 
-generate_patterns(N) when N rem 2 == 1 ->
-    generate_upper_patterns(generate_lower_patterns(N - 1), N);
-generate_patterns(N) ->
-    generate_upper_patterns(generate_lower_patterns(N), N).
+find_reflections({Width, Height, Rows, Cols}, NBitErrors) ->
+    H = check_reflection(Height, Rows, NBitErrors),
+    V = check_reflection(Width, Cols, NBitErrors),
+    100 * H + V.
 
 
-generate_lower_patterns(0) -> [];
-generate_lower_patterns(N) ->
-    Patterns = [{N div 2,
-                 [{I, N - (I - 1)} || I <- lists:seq(1, N div 2)]}],
-    Patterns ++ generate_lower_patterns(N - 2).
+check_reflection(N, Pattern, NBitErrors) ->
+    check_reflection(1, N, Pattern, NBitErrors).
+
+check_reflection(I, N, _, _) when I > N - 1 ->
+    0;
+check_reflection(I, N, Pattern, NBitErrors) ->
+    W = min(I, N - I),
+    L = span(Pattern, I - W, I),
+    R = lists:reverse(span(Pattern, I, I + W)),
+    BitErrors = lists:sum([bit_count(A bxor B) || {A, B} <- lists:zip(L, R)]),
+    case BitErrors of
+        NBitErrors -> I;
+        _ -> check_reflection(I + 1, N, Pattern, NBitErrors)
+    end.
 
 
-generate_upper_patterns(LowerPatterns, N) ->
-    generate_upper_patterns(LowerPatterns, N, []).
+span(Data, Start, Stop) ->
+    [element(I + 1, Data) || I <- lists:seq(Start, Stop - 1)].
 
 
-generate_upper_patterns([], _, Result) ->
-    NewResult = lists:uniq(fun({P, Pattern}) ->
-            {P, [if A > B -> {B, A}; true -> {A, B} end || {A, B} <- Pattern]}
-        end,
-        Result),
-    lists:sort(fun({_, A}, {_, B}) ->
-            length(A) > length(B)
-        end,
-        NewResult);
-generate_upper_patterns([{P, Pattern} | Tail], N, Result) ->
-    NewPattern = [{N - (A - 1), N - (B - 1)} || {A, B} <- Pattern],
-    generate_upper_patterns(Tail, N, [{P, Pattern}, {N - P, NewPattern} | Result]).
+bit_count(N) ->
+    bit_count(N, 0).
 
 
-verify_patterns([], _) -> 0;
-verify_patterns([{Result, Pattern} | Tail], Grid) ->
-    Match = lists:foldl(fun
-            (_, false) -> false;
-            ({A, B}, _) -> element(A, Grid) == element(B, Grid)
-        end,
-        true,
-        Pattern),
-    case Match of
-        true ->
-            Result;
-        _ ->
-            verify_patterns(Tail, Grid)
+bit_count(0, Count) ->
+    Count;
+bit_count(N, Count) ->
+    case N band 1 of
+        1 -> bit_count(N bsr 1, Count + 1);
+        _ -> bit_count(N bsr 1, Count)
     end.
